@@ -34,12 +34,8 @@ export class VoiceProcessingService {
       console.warn('OpenAI API key not found. Whisper transcription will not be available.')
     }
 
-    // Initialize WSET mapper if API key is available
-    try {
-      this.wsetMapper = createWSETMapper(undefined, this.config.gptModel)
-    } catch (error) {
-      console.warn('OpenAI API key not found. WSET mapping will not be available.')
-    }
+    // Initialize WSET mapper lazily - don't try to create it during construction
+    this.wsetMapper = null
   }
 
   async processVoice(request: VoiceProcessingRequest): Promise<VoiceProcessingResponse> {
@@ -167,6 +163,15 @@ export class VoiceProcessingService {
   }
 
   private async mapTranscriptToWSET(transcript: string) {
+    // Lazy initialize WSET mapper when actually needed
+    if (!this.wsetMapper) {
+      try {
+        this.wsetMapper = createWSETMapper(undefined, this.config.gptModel)
+      } catch (error) {
+        console.warn('OpenAI API key not found. WSET mapping will not be available.')
+      }
+    }
+    
     if (!this.wsetMapper) {
       // Fallback basic structure if WSET mapper is not available
       return {
@@ -446,10 +451,20 @@ export class VoiceProcessingService {
   }
 }
 
-// Create and export singleton instance
-export const voiceProcessor = new VoiceProcessingService({
-  maxRecordingDuration: parseInt(process.env.NEXT_PUBLIC_MAX_RECORDING_DURATION || '30000'),
-  enableCache: process.env.NEXT_PUBLIC_VOICE_PROCESSING_ENABLED !== 'false'
-})
+// Lazy singleton instance
+let _voiceProcessorInstance: VoiceProcessingService | null = null
+
+export const getVoiceProcessor = (): VoiceProcessingService => {
+  if (!_voiceProcessorInstance) {
+    _voiceProcessorInstance = new VoiceProcessingService({
+      maxRecordingDuration: parseInt(process.env.NEXT_PUBLIC_MAX_RECORDING_DURATION || '30000'),
+      enableCache: process.env.NEXT_PUBLIC_VOICE_PROCESSING_ENABLED !== 'false'
+    })
+  }
+  return _voiceProcessorInstance
+}
+
+// For backward compatibility - deprecated, use getVoiceProcessor()
+export const voiceProcessor = null
 
 export default VoiceProcessingService

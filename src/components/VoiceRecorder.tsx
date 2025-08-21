@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Mic, MicOff, Square, Play, Pause, Upload, Loader2, AlertTriangle } from 'lucide-react'
-import { voiceProcessor } from '@/lib/voice/voice-processor'
+import { getVoiceProcessor } from '@/lib/voice/voice-processor'
 import { useVoiceProcessing } from '@/lib/api/voice-api'
 import { wineApi, type CreateWineFromVoiceRequest } from '@/lib/api/wine-api'
 import { fileUploader, UPLOAD_CONFIGS } from '@/lib/storage/file-upload'
@@ -54,7 +54,7 @@ export default function VoiceRecorder() {
         }
       }
 
-      await voiceProcessor.startRecording()
+      await getVoiceProcessor().startRecording()
       setIsRecording(true)
       setRecordedAudio(null)
       setAudioUrl(null)
@@ -67,7 +67,7 @@ export default function VoiceRecorder() {
 
   const stopRecording = async () => {
     try {
-      const audioBlob = await voiceProcessor.stopRecording()
+      const audioBlob = await getVoiceProcessor().stopRecording()
       setIsRecording(false)
       setRecordedAudio(audioBlob)
       

@@ -367,14 +367,22 @@ export function getWSETMapper(): WSETMapper | null {
   }
 }
 
-// Export optional singleton instance
-export const wsetMapper = (() => {
-  try {
-    return createWSETMapper()
-  } catch (error) {
-    console.warn('WSET mapper initialization failed - AI features disabled')
-    return null
+// Lazy singleton instance - only initialize when actually needed
+let _wsetMapperInstance: WSETMapper | null | undefined = undefined
+
+export const getWSETMapperInstance = (): WSETMapper | null => {
+  if (_wsetMapperInstance === undefined) {
+    try {
+      _wsetMapperInstance = createWSETMapper()
+    } catch (error) {
+      console.warn('WSET mapper initialization failed - AI features disabled')
+      _wsetMapperInstance = null
+    }
   }
-})()
+  return _wsetMapperInstance
+}
+
+// For backward compatibility - use lazy initialization
+export const wsetMapper = null // Deprecated - use getWSETMapperInstance()
 
 export default WSETMapper
