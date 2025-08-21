@@ -2,7 +2,7 @@
 
 import { speechRecognition, audioRecorder, createAudioHash } from './speech-recognition'
 import { createWhisperClient, getAudioDuration } from './whisper-client'
-import { createWSETMapper } from '@/lib/wset/wset-mapper'
+import { getWSETMapperInstance } from '@/lib/wset/wset-mapper'
 import type { 
   VoiceProcessingRequest, 
   VoiceProcessingResponse, 
@@ -13,7 +13,6 @@ import type {
 
 export class VoiceProcessingService {
   private whisperClient: any
-  private wsetMapper: any
   private config: VoiceProcessingConfig
   private processingQueue: Map<string, Promise<VoiceProcessingResponse>> = new Map()
 
@@ -34,8 +33,7 @@ export class VoiceProcessingService {
       console.warn('OpenAI API key not found. Whisper transcription will not be available.')
     }
 
-    // Initialize WSET mapper lazily - don't try to create it during construction
-    this.wsetMapper = null
+    // WSET mapper will be initialized lazily via getWSETMapperInstance() when needed
   }
 
   async processVoice(request: VoiceProcessingRequest): Promise<VoiceProcessingResponse> {
@@ -163,16 +161,10 @@ export class VoiceProcessingService {
   }
 
   private async mapTranscriptToWSET(transcript: string) {
-    // Lazy initialize WSET mapper when actually needed
-    if (!this.wsetMapper) {
-      try {
-        this.wsetMapper = createWSETMapper(undefined, this.config.gptModel)
-      } catch (error) {
-        console.warn('OpenAI API key not found. WSET mapping will not be available.')
-      }
-    }
+    // Use the lazy singleton WSET mapper instance
+    const wsetMapper = getWSETMapperInstance()
     
-    if (!this.wsetMapper) {
+    if (!wsetMapper) {
       // Fallback basic structure if WSET mapper is not available
       return {
         appearance: {
@@ -206,7 +198,7 @@ export class VoiceProcessingService {
     }
 
     try {
-      const mappingResult = await this.wsetMapper.mapTranscriptToWSET({
+      const mappingResult = await wsetMapper.mapTranscriptToWSET({
         transcript,
         context: {
           wineType: this.inferWineTypeFromTranscript(transcript)
@@ -444,6 +436,10 @@ export class VoiceProcessingService {
 
   isWhisperAvailable(): boolean {
     return !!this.whisperClient
+  }
+
+  isWSETMappingAvailable(): boolean {
+    return getWSETMapperInstance() !== null
   }
 
   async getAudioDuration(audioBlob: Blob): Promise<number> {

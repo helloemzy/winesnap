@@ -239,7 +239,7 @@ const pwaConfig = withPWA({
     },
   ],
   // Mobile optimizations
-  buildExcludes: [/middleware-manifest\.json$/],
+  buildExcludes: [/middleware-manifest\.json$/, /app-build-manifest\.json$/],
   maximumFileSizeToCacheInBytes: 5000000, // 5MB
   mode: 'production',
 });

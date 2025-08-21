@@ -357,12 +357,12 @@ export function createWSETMapper(apiKey?: string, model?: string): WSETMapper | 
   return new WSETMapper(key, model)
 }
 
-// Safe mapper instance that won't throw during initialization
-export function getWSETMapper(): WSETMapper | null {
+// Factory function to create a new mapper instance (not cached)
+export function createWSETMapperInstance(apiKey?: string, model?: string): WSETMapper | null {
   try {
-    return createWSETMapper()
+    return createWSETMapper(apiKey, model)
   } catch (error) {
-    console.warn('WSET mapper not available:', error)
+    console.warn('WSET mapper creation failed:', error)
     return null
   }
 }
@@ -374,15 +374,30 @@ export const getWSETMapperInstance = (): WSETMapper | null => {
   if (_wsetMapperInstance === undefined) {
     try {
       _wsetMapperInstance = createWSETMapper()
+      if (!_wsetMapperInstance) {
+        console.warn('WSET mapper initialization failed - AI features disabled (API key not configured)')
+      }
     } catch (error) {
-      console.warn('WSET mapper initialization failed - AI features disabled')
+      console.warn('WSET mapper initialization failed - AI features disabled:', error)
       _wsetMapperInstance = null
     }
   }
   return _wsetMapperInstance
 }
 
-// For backward compatibility - use lazy initialization
-export const wsetMapper = null // Deprecated - use getWSETMapperInstance()
+// Lazy getter function for backward compatibility
+export const getWSETMapper = (): WSETMapper | null => {
+  return getWSETMapperInstance()
+}
+
+// For components that need to check if WSET mapping is available
+export const isWSETMappingAvailable = (): boolean => {
+  return getWSETMapperInstance() !== null
+}
+
+// Reset function for testing or reinitialization
+export const resetWSETMapper = (): void => {
+  _wsetMapperInstance = undefined
+}
 
 export default WSETMapper
