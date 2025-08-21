@@ -2,12 +2,17 @@
 
 ## Live Production Deployment
 
-**Current Live URL**: https://winesnap-oleov0698-helloemilywho-gmailcoms-projects.vercel.app
+**Current Live URL**: https://winesnap-m6j6plk1b-helloemilywho-gmailcoms-projects.vercel.app
 
-**Status**: ✅ Production Ready
-- Build Status: ✅ Successful
+**GitHub Repository**: https://github.com/helloemzy/winesnap
+
+**Status**: ✅ Production Ready - Latest Deployment
+- Build Status: ✅ Successful 
 - Bundle Size: 245 kB optimized
 - Performance: <2s first load
+- WSET Mapper: ✅ Fixed lazy initialization
+- PWA Assets: ✅ Optimized and cached
+- Service Worker: ✅ Enhanced caching strategy
 - PWA: ✅ Installable
 
 ## Quick Deploy Options
@@ -36,7 +41,7 @@
    OPENAI_API_KEY=your_openai_key
    ```
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/winesnap)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/helloemzy/winesnap)
 
 ### Option 2: Deploy to Netlify
 
