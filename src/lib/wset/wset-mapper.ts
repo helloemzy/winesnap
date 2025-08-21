@@ -348,15 +348,33 @@ Return JSON in this exact format:
 }
 
 // Factory function
-export function createWSETMapper(apiKey?: string, model?: string): WSETMapper {
+export function createWSETMapper(apiKey?: string, model?: string): WSETMapper | null {
   const key = apiKey || process.env.OPENAI_API_KEY
-  if (!key) {
-    throw new Error('OpenAI API key is required for WSET mapping')
+  if (!key || key.includes('placeholder')) {
+    console.warn('OpenAI API key not configured - WSET mapping will not be available')
+    return null
   }
   return new WSETMapper(key, model)
 }
 
-// Export singleton instance
-export const wsetMapper = createWSETMapper()
+// Safe mapper instance that won't throw during initialization
+export function getWSETMapper(): WSETMapper | null {
+  try {
+    return createWSETMapper()
+  } catch (error) {
+    console.warn('WSET mapper not available:', error)
+    return null
+  }
+}
+
+// Export optional singleton instance
+export const wsetMapper = (() => {
+  try {
+    return createWSETMapper()
+  } catch (error) {
+    console.warn('WSET mapper initialization failed - AI features disabled')
+    return null
+  }
+})()
 
 export default WSETMapper

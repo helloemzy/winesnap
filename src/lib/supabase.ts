@@ -1,13 +1,43 @@
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
 
-// Client-side Supabase client
+// Configuration constants
+export const supabaseConfig = {
+  url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+  anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key',
+}
+
+// Validate environment variables at runtime (not build time)
+export const validateSupabaseConfig = () => {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Missing Supabase environment variables - some features may not work')
+    return false
+  }
+  return true
+}
+
+// Singleton client instance to prevent multiple instances
+let _supabaseClient: ReturnType<typeof createClient<Database>> | null = null
+
+// Client-side Supabase client (singleton)
 export const createSupabaseClient = () => {
+  if (_supabaseClient) {
+    return _supabaseClient
+  }
+
   validateSupabaseConfig()
-  return createClient<Database>(
+  _supabaseClient = createClient<Database>(
     supabaseConfig.url,
-    supabaseConfig.anonKey
+    supabaseConfig.anonKey,
+    {
+      auth: {
+        storageKey: 'winesnap-auth',
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      },
+    }
   )
+  
+  return _supabaseClient
 }
 
 // Admin client for server actions
@@ -27,21 +57,6 @@ export const createSupabaseAdminClient = () => {
       },
     }
   )
-}
-
-// Configuration constants
-export const supabaseConfig = {
-  url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key',
-}
-
-// Validate environment variables at runtime (not build time)
-export const validateSupabaseConfig = () => {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.warn('Missing Supabase environment variables - some features may not work')
-    return false
-  }
-  return true
 }
 
 // Default client instance for compatibility
