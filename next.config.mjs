@@ -26,7 +26,7 @@ const nextConfig = {
   },
   experimental: {
     typedRoutes: true,
-    optimizeCss: true,
+    optimizeCss: false,
     optimizeServerReact: true,
   },
   images: {

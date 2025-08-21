@@ -43,3 +43,6 @@ export const validateSupabaseConfig = () => {
   }
   return true
 }
+
+// Default client instance for compatibility
+export const supabase = createSupabaseClient()
