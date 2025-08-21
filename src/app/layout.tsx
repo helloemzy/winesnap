@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from '@/components/auth/auth-provider'
@@ -48,13 +48,14 @@ export const metadata: Metadata = {
     title: "WineSnap - Professional Wine Tasting Journal",
     description: "Professional wine tasting journal with WSET Level 3 systematic approach",
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: "cover",
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#dc2626" },
     { media: "(prefers-color-scheme: dark)", color: "#7c2d12" },
