@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  /* Custom range slider styling */
+  .slider {
+    background: transparent;
+    -webkit-appearance: none;
+  }
+
+  .slider::-webkit-slider-track {
+    background: rgb(229 231 235); /* neutral-200 */
+    height: 8px;
+    border-radius: 4px;
+  }
+
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 20px;
+    width: 20px;
+    background: rgb(239 68 68); /* red-500 / wine-500 */
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+
+  .slider::-moz-range-track {
+    background: rgb(229 231 235); /* neutral-200 */
+    height: 8px;
+    border-radius: 4px;
+    border: none;
+  }
+
+  .slider::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    background: rgb(239 68 68); /* red-500 / wine-500 */
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+
+  .dark .slider::-webkit-slider-track {
+    background: rgb(64 64 64); /* neutral-700 */
+  }
+
+  .dark .slider::-moz-range-track {
+    background: rgb(64 64 64); /* neutral-700 */
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  /* Animation for scale hover effects */
+  .hover\:scale-102:hover {
+    transform: scale(1.02);
+  }
+
+  .active\:scale-95:active {
+    transform: scale(0.95);
+  }
+
+  /* Glass morphism effect */
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+
+  .shadow-glass {
+    box-shadow: 0 8px 32px 0 rgba(124, 45, 18, 0.1);
+  }
+
+  .shadow-wine {
+    box-shadow: 0 4px 20px 0 rgba(220, 38, 38, 0.2);
+  }
+
+  .shadow-gold {
+    box-shadow: 0 4px 20px 0 rgba(245, 158, 11, 0.3);
+  }
+}
