@@ -13,21 +13,34 @@ import {
   TrendingUp,
   Camera,
   FileText,
-  X
+  X,
+  Trophy,
+  Star,
+  Shield,
+  Gamepad2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/stores/ui-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 
-const navigationItems = [
+type NavigationItem = {
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  badge?: string
+}
+
+const navigationItems: NavigationItem[] = [
   { href: '/dashboard', icon: Home, label: 'Dashboard' },
-  { href: '/tastings', icon: Wine, label: 'My Tastings' },
-  { href: '/tastings/new', icon: Camera, label: 'New Tasting' },
+  { href: '/capture', icon: Camera, label: 'Wine Capture', badge: 'New' },
+  { href: '/collection', icon: Wine, label: 'My Collection' },
+  { href: '/pet', icon: Heart, label: 'My Pet' },
+  { href: '/achievements', icon: Trophy, label: 'Achievements' },
+  { href: '/friends', icon: Users, label: 'Friends' },
+  { href: '/guilds', icon: Shield, label: 'Guilds' },
+  { href: '/battle', icon: Gamepad2, label: 'Battle Arena' },
   { href: '/discover', icon: TrendingUp, label: 'Discover' },
-  { href: '/social', icon: Users, label: 'Social' },
-  { href: '/favorites', icon: Heart, label: 'Favorites' },
-  { href: '/collections', icon: BookOpen, label: 'Collections' },
   { href: '/reports', icon: FileText, label: 'Reports' },
 ]
 
@@ -113,10 +126,15 @@ export function Sidebar() {
                 <Link key={item.href} href={item.href}>
                   <Button
                     variant={isActive ? 'secondary' : 'ghost'}
-                    className="w-full justify-start"
+                    className="w-full justify-start relative"
                   >
                     <Icon className="mr-3 h-4 w-4" />
                     {item.label}
+                    {item.badge && (
+                      <span className="absolute right-2 top-1 bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
                   </Button>
                 </Link>
               )

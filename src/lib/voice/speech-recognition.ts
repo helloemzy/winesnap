@@ -219,14 +219,18 @@ export class AudioRecorder {
         }
       }
 
-      // Set maximum duration
+      // Start recording first
+      this.mediaRecorder.start(1000) // Collect data every second
+
+      // Set maximum duration AFTER starting recording
       if (options.maxDuration) {
         setTimeout(() => {
-          this.stopRecording()
+          // Check if recording is still active before stopping
+          if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+            this.stopRecording()
+          }
         }, options.maxDuration)
       }
-
-      this.mediaRecorder.start(1000) // Collect data every second
     } catch (error) {
       throw new Error(`Failed to start audio recording: ${error}`)
     }
@@ -236,6 +240,12 @@ export class AudioRecorder {
     return new Promise((resolve, reject) => {
       if (!this.mediaRecorder) {
         reject(new Error('No active recording'))
+        return
+      }
+
+      // Check if recording is in a valid state to stop
+      if (this.mediaRecorder.state === 'inactive') {
+        reject(new Error('Recording already stopped'))
         return
       }
 

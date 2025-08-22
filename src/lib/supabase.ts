@@ -1,18 +1,59 @@
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
 
-// Configuration constants
+// Environment detection
+const getAppEnvironment = (): 'development' | 'staging' | 'production' => {
+  const env = process.env.NEXT_PUBLIC_APP_ENV || 'development'
+  return env as 'development' | 'staging' | 'production'
+}
+
+// Configuration constants with environment-aware selection
 export const supabaseConfig = {
-  url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key',
+  url: (() => {
+    const env = getAppEnvironment()
+    switch (env) {
+      case 'staging':
+        return process.env.NEXT_PUBLIC_STAGING_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+      case 'production':
+        return process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+      default:
+        return process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+    }
+  })(),
+  anonKey: (() => {
+    const env = getAppEnvironment()
+    switch (env) {
+      case 'staging':
+        return process.env.NEXT_PUBLIC_STAGING_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+      case 'production':
+        return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+      default:
+        return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+    }
+  })(),
+  environment: getAppEnvironment(),
+  schema: process.env.NEXT_PUBLIC_DATABASE_SCHEMA || 'public',
 }
 
 // Validate environment variables at runtime (not build time)
 export const validateSupabaseConfig = () => {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.warn('Missing Supabase environment variables - some features may not work')
+  const env = getAppEnvironment()
+  let missingVars = []
+  
+  if (supabaseConfig.url === 'https://placeholder.supabase.co') {
+    missingVars.push(`NEXT_PUBLIC${env === 'staging' ? '_STAGING' : ''}_SUPABASE_URL`)
+  }
+  
+  if (supabaseConfig.anonKey === 'placeholder-key') {
+    missingVars.push(`NEXT_PUBLIC${env === 'staging' ? '_STAGING' : ''}_SUPABASE_ANON_KEY`)
+  }
+  
+  if (missingVars.length > 0) {
+    console.warn(`Missing Supabase environment variables for ${env}: ${missingVars.join(', ')}`)
     return false
   }
+  
+  console.info(`Supabase configured for ${env} environment`)
   return true
 }
 

@@ -2,7 +2,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import { corsHeaders, securityHeaders } from '../_shared/cors.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -31,7 +31,7 @@ interface WSETMappingResponse {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: { ...corsHeaders, ...securityHeaders } })
   }
 
   try {
@@ -43,7 +43,7 @@ serve(async (req) => {
     if (!userId) {
       return new Response(
         JSON.stringify({ error: 'User ID required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, ...securityHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -75,7 +75,7 @@ serve(async (req) => {
             }),
             { 
               status: 200, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+              headers: { ...corsHeaders, ...securityHeaders, 'Content-Type': 'application/json' } 
             }
           )
         }
@@ -88,7 +88,7 @@ serve(async (req) => {
     if (!finalTranscript?.trim()) {
       return new Response(
         JSON.stringify({ error: 'No transcript available for processing' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, ...securityHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -118,7 +118,7 @@ serve(async (req) => {
       }),
       { 
         status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, ...securityHeaders, 'Content-Type': 'application/json' } 
       }
     )
 
@@ -132,7 +132,7 @@ serve(async (req) => {
       }),
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, ...securityHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }
