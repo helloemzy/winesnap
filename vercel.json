@@ -1,24 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ],
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
-    "NEXT_PUBLIC_VERCEL_URL": "@vercel_url",
-    "NEXT_PUBLIC_APP_ENV": "@app_env"
-  },
   "headers": [
     {
       "source": "/api/(.*)",
@@ -44,11 +24,6 @@
       "destination": "/api/:path*"
     }
   ],
-  "functions": {
-    "src/pages/api/**/*.ts": {
-      "maxDuration": 30
-    }
-  },
   "regions": ["iad1"],
   "framework": "nextjs"
 }
