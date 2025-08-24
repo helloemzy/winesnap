@@ -99,6 +99,7 @@ export default function CapturePage() {
   const [voiceNote, setVoiceNote] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false)
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -361,22 +362,59 @@ export default function CapturePage() {
         }
       }
       
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
         // Create audio blob
         const audioBlob = new Blob(chunks, { type: 'audio/webm;codecs=opus' })
         
-        // In a real app, you would send this to a speech-to-text service
-        // For now, we'll simulate transcription
-        const mockTranscriptions = [
-          "This wine has a beautiful ruby color with notes of blackcurrant and oak, medium tannins, and a long finish.",
-          "Rich and complex wine with dark fruit aromas, hints of vanilla and spice, full-bodied with great structure.",
-          "Elegant wine with floral notes, bright acidity, and mineral undertones. Very food-friendly.",
-          "Bold and intense with jammy fruit flavors, chocolate notes, and a warm finish. Well-balanced.",
-          "Light and refreshing with citrus notes, crisp acidity, and a clean finish. Perfect for summer."
-        ]
-        
-        const randomTranscription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)]
-        setVoiceNote(randomTranscription)
+        try {
+          console.log('Sending audio for transcription and categorization...')
+          setIsProcessingVoice(true)
+          
+          // Send audio to our transcription API
+          const formData = new FormData()
+          formData.append('audio', audioBlob, 'recording.webm')
+          
+          const transcriptionResponse = await fetch('/api/transcribe-audio', {
+            method: 'POST',
+            body: formData
+          })
+          
+          if (!transcriptionResponse.ok) {
+            throw new Error('Transcription failed')
+          }
+          
+          const result = await transcriptionResponse.json()
+          console.log('Transcription result:', result)
+          
+          // Set the transcribed text
+          setVoiceNote(result.transcription)
+          
+          // Auto-populate tasting categories based on AI analysis
+          if (result.categories) {
+            const newSelectedNotes: Record<string, string[]> = { ...selectedNotes }
+            
+            // Add AI-detected keywords to existing selections
+            Object.entries(result.categories).forEach(([category, keywords]: [string, any]) => {
+              if (Array.isArray(keywords) && keywords.length > 0) {
+                // Merge with existing selections (don't override manual selections)
+                const existing = newSelectedNotes[category] || []
+                const combined = [...existing, ...keywords].filter((item, index, arr) => arr.indexOf(item) === index) // Remove duplicates
+                newSelectedNotes[category] = combined
+              }
+            })
+            
+            setSelectedNotes(newSelectedNotes)
+            console.log('Auto-populated categories:', newSelectedNotes)
+          }
+          
+        } catch (error) {
+          console.error('Transcription error:', error)
+          
+          // Fallback to basic transcription message
+          setVoiceNote("Voice note recorded successfully. Transcription service temporarily unavailable.")
+        } finally {
+          setIsProcessingVoice(false)
+        }
         
         // Stop all audio tracks
         stream.getTracks().forEach(track => track.stop())
@@ -397,9 +435,9 @@ export default function CapturePage() {
       console.error('Error starting voice recording:', error)
       setIsRecording(false)
       
-      // Fallback to mock text if permissions denied
+      // Fallback to message if permissions denied
       setTimeout(() => {
-        setVoiceNote("This wine has a beautiful ruby color with notes of blackcurrant and oak...")
+        setVoiceNote("Microphone permission denied. Please enable microphone access to record voice notes.")
       }, 1000)
     }
   }
@@ -422,6 +460,7 @@ export default function CapturePage() {
     setVoiceNote('')
     setCaptureMode('camera')
     setShowSuccess(false)
+    setIsProcessingVoice(false)
     startCamera()
   }
 
@@ -616,12 +655,21 @@ export default function CapturePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {voiceNote ? (
+                {isProcessingVoice ? (
+                  <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-3"></div>
+                      <p className="text-blue-800 font-medium">Processing voice note...</p>
+                    </div>
+                    <p className="text-blue-600 text-sm mt-1">Transcribing and categorizing keywords</p>
+                  </div>
+                ) : voiceNote ? (
                   <div className="bg-purple-50 rounded-xl p-4 mb-4">
                     <p className="text-gray-800 italic">"{voiceNote}"</p>
+                    <p className="text-purple-600 text-sm mt-2">✨ Keywords automatically added to categories above</p>
                   </div>
                 ) : (
-                  <p className="text-gray-500 mb-4">Add personal tasting notes with your voice</p>
+                  <p className="text-gray-500 mb-4">Add personal tasting notes with your voice - keywords will auto-populate categories!</p>
                 )}
                 
                 <Button
