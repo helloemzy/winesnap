@@ -730,7 +730,7 @@ export default function CapturePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {/* Permission Status */}
+                {/* Permission Status - Show warning if needed */}
                 {microphonePermission === 'unknown' || microphonePermission === 'denied' ? (
                   <div className="bg-yellow-50 rounded-xl p-4 mb-4 border border-yellow-200">
                     <div className="flex items-center mb-2">
@@ -747,7 +747,7 @@ export default function CapturePage() {
                     </p>
                     <Button
                       onClick={requestMicrophonePermission}
-                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                      className="w-full mb-3 bg-yellow-500 hover:bg-yellow-600 text-white"
                       disabled={microphonePermission === 'checking'}
                     >
                       {microphonePermission === 'checking' ? (
@@ -764,49 +764,49 @@ export default function CapturePage() {
                     </Button>
                   </div>
                 ) : microphonePermission === 'granted' ? (
-                  <>
-                    {isProcessingVoice ? (
-                      <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
-                        <div className="flex items-center">
-                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-3"></div>
-                          <p className="text-blue-800 font-medium">Processing voice note...</p>
-                        </div>
-                        <p className="text-blue-600 text-sm mt-1">Transcribing and categorizing keywords</p>
-                      </div>
-                    ) : voiceNote ? (
-                      <div className="bg-purple-50 rounded-xl p-4 mb-4">
-                        <p className="text-gray-800 italic">"{voiceNote}"</p>
-                        <p className="text-purple-600 text-sm mt-2">✨ Keywords automatically added to categories below</p>
-                      </div>
-                    ) : (
-                      <div className="mb-4">
-                        <div className="bg-green-50 rounded-lg p-3 mb-3 border border-green-200">
-                          <p className="text-green-800 text-sm font-medium">✅ Microphone enabled!</p>
-                          <p className="text-green-700 text-sm">Record your tasting notes - keywords will auto-populate categories.</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <Button
-                      onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
-                      variant={isRecording ? "destructive" : "outline"}
-                      className="w-full"
-                      disabled={isProcessingVoice}
-                    >
-                      {isRecording ? (
-                        <>
-                          <MicOff className="h-4 w-4 mr-2" />
-                          Recording... (tap to stop)
-                        </>
-                      ) : (
-                        <>
-                          <Mic className="h-4 w-4 mr-2" />
-                          🎤 Record Voice Note
-                        </>
-                      )}
-                    </Button>
-                  </>
+                  <div className="bg-green-50 rounded-lg p-3 mb-4 border border-green-200">
+                    <p className="text-green-800 text-sm font-medium">✅ Microphone enabled!</p>
+                    <p className="text-green-700 text-sm">Record your tasting notes - keywords will auto-populate categories.</p>
+                  </div>
                 ) : null}
+
+                {/* Processing/Results Display */}
+                {isProcessingVoice ? (
+                  <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-3"></div>
+                      <p className="text-blue-800 font-medium">Processing voice note...</p>
+                    </div>
+                    <p className="text-blue-600 text-sm mt-1">Transcribing and categorizing keywords</p>
+                  </div>
+                ) : voiceNote ? (
+                  <div className="bg-purple-50 rounded-xl p-4 mb-4">
+                    <p className="text-gray-800 italic">"{voiceNote}"</p>
+                    <p className="text-purple-600 text-sm mt-2">✨ Keywords automatically added to categories below</p>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 mb-4">Add personal tasting notes with your voice - keywords will auto-populate categories!</p>
+                )}
+                
+                {/* Record Button - Always visible */}
+                <Button
+                  onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                  variant={isRecording ? "destructive" : "outline"}
+                  className="w-full"
+                  disabled={isProcessingVoice}
+                >
+                  {isRecording ? (
+                    <>
+                      <MicOff className="h-4 w-4 mr-2" />
+                      Recording... (tap to stop)
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="h-4 w-4 mr-2" />
+                      🎤 Record Voice Note
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
 
