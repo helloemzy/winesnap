@@ -1,4 +1,25 @@
+'use client'
+
+import { useEffect } from 'react'
+import { createSupabaseClient } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
+
 export default function HomePage() {
+  const router = useRouter()
+  const supabase = createSupabaseClient()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        // If user is already logged in, redirect to capture page
+        router.replace('/capture')
+      }
+    }
+    
+    checkAuth()
+  }, [router, supabase])
+
   return (
     <div style={{ 
       minHeight: '100vh', 

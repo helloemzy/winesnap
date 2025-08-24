@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import { createSupabaseClient } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 // WSET Tasting Notes Quick Buttons
 const WSET_CATEGORIES = {
@@ -86,6 +88,9 @@ const CaptureSuccessAnimation = ({ wine, onComplete }: { wine: any, onComplete: 
 }
 
 export default function CapturePage() {
+  const router = useRouter()
+  const supabase = createSupabaseClient()
+  
   const [captureMode, setCaptureMode] = useState<'camera' | 'tasting'>('camera')
   const [isCapturing, setIsCapturing] = useState(false)
   const [capturedWine, setCapturedWine] = useState<any>(null)
@@ -93,12 +98,38 @@ export default function CapturePage() {
   const [selectedNotes, setSelectedNotes] = useState<Record<string, string[]>>({})
   const [voiceNote, setVoiceNote] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const [cameraError, setCameraError] = useState<string>('')
   const [cameraReady, setCameraReady] = useState(false)
+
+  // Check authentication
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.replace('/auth/signin')
+        return
+      }
+      setIsAuthenticated(true)
+    }
+    
+    checkAuth()
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        router.replace('/auth/signin')
+      } else {
+        setIsAuthenticated(true)
+      }
+    })
+    
+    return () => subscription.unsubscribe()
+  }, [router, supabase])
 
   // Initialize camera
   const startCamera = useCallback(async () => {
@@ -377,6 +408,18 @@ export default function CapturePage() {
     setCaptureMode('camera')
     setShowSuccess(false)
     startCamera()
+  }
+
+  // Show loading while checking auth
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   if (showSuccess && capturedWine) {

@@ -9,13 +9,24 @@ export async function GET(request: NextRequest) {
     const supabase = createSupabaseClient()
     
     try {
-      await supabase.auth.exchangeCodeForSession(code)
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      
+      if (error) {
+        console.error('Auth exchange error:', error)
+        return NextResponse.redirect(`${requestUrl.origin}/auth/signin?error=callback_error`)
+      }
+      
+      if (data.session) {
+        console.log('Auth successful, user:', data.user?.email)
+        // Redirect directly to capture page instead of dashboard
+        return NextResponse.redirect(`${requestUrl.origin}/capture`)
+      }
     } catch (error) {
       console.error('Error exchanging code for session:', error)
       return NextResponse.redirect(`${requestUrl.origin}/auth/signin?error=callback_error`)
     }
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
+  // Fallback redirect
+  return NextResponse.redirect(`${requestUrl.origin}/capture`)
 }
