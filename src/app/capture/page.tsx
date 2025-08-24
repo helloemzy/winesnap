@@ -9,27 +9,27 @@ import Link from 'next/link'
 import { createSupabaseClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
-// WSET Tasting Notes Quick Buttons
-const WSET_CATEGORIES = {
+// Universal Tasting Notes Quick Buttons (works for all beverages)
+const TASTING_CATEGORIES = {
   appearance: {
     title: 'Appearance',
-    options: ['Clear', 'Hazy', 'Pale', 'Medium', 'Deep', 'Ruby', 'Garnet', 'Purple', 'Brick', 'Brown']
+    options: ['Clear', 'Hazy', 'Pale', 'Medium', 'Deep', 'Light', 'Dark', 'Colorful', 'Vibrant', 'Rich']
   },
-  nose: {
-    title: 'Nose',
-    options: ['Floral', 'Fruity', 'Herbal', 'Spicy', 'Oaky', 'Earthy', 'Mineral', 'Clean', 'Complex']
+  aroma: {
+    title: 'Aroma/Smell',
+    options: ['Fresh', 'Fruity', 'Sweet', 'Citrus', 'Herbal', 'Spicy', 'Strong', 'Mild', 'Pleasant', 'Complex']
   },
-  palate: {
-    title: 'Palate', 
-    options: ['Dry', 'Sweet', 'Light', 'Medium', 'Full', 'Smooth', 'Tannic', 'Acidic', 'Balanced']
+  taste: {
+    title: 'Taste', 
+    options: ['Sweet', 'Bitter', 'Sour', 'Salty', 'Refreshing', 'Bold', 'Mild', 'Smooth', 'Sharp', 'Balanced']
   },
-  finish: {
-    title: 'Finish',
-    options: ['Short', 'Medium', 'Long', 'Smooth', 'Warm', 'Spicy', 'Clean', 'Complex']
+  texture: {
+    title: 'Texture/Mouthfeel',
+    options: ['Smooth', 'Bubbly', 'Creamy', 'Light', 'Heavy', 'Crisp', 'Thick', 'Thin', 'Fizzy', 'Still']
   },
-  quality: {
-    title: 'Quality',
-    options: ['Good', 'Very Good', 'Outstanding', 'Exceptional']
+  overall: {
+    title: 'Overall Rating',
+    options: ['Excellent', 'Very Good', 'Good', 'Average', 'Poor']
   }
 }
 
@@ -447,7 +447,7 @@ export default function CapturePage() {
       <div className="bg-white shadow-sm border-b">
         <div className="flex items-center justify-between p-4">
           <h1 className="text-2xl font-bold text-gray-900">
-            {captureMode === 'camera' ? '📸 Capture Wine' : '📝 Tasting Notes'}
+            {captureMode === 'camera' ? '📸 Capture Beverage' : '📝 Tasting Notes'}
           </h1>
           {capturedWine && (
             <Button variant="ghost" size="sm" onClick={resetCapture}>
@@ -491,7 +491,7 @@ export default function CapturePage() {
                             <p className="text-xs text-gray-300 mt-1">Will use demo mode</p>
                           </div>
                         ) : cameraReady ? (
-                          <p className="font-semibold text-green-300">Camera Ready - Position wine label in frame</p>
+                          <p className="font-semibold text-green-300">Camera Ready - Position beverage in frame</p>
                         ) : (
                           <div>
                             <p className="font-semibold">Loading Camera...</p>
@@ -518,7 +518,7 @@ export default function CapturePage() {
                   ) : cameraError ? (
                     <>
                       <Camera className="h-6 w-6 mr-2" />
-                      Capture Wine (Demo Mode)
+                      Capture Beverage (Demo Mode)
                     </>
                   ) : cameraReady ? (
                     <>
@@ -563,22 +563,21 @@ export default function CapturePage() {
                 </div>
                 
                 {!capturedWine.isWine && (
-                  <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                    <p className="text-orange-800 text-sm font-medium">
-                      🥤 This appears to be a {capturedWine.type.toLowerCase()}, not a wine bottle.
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <p className="text-blue-800 text-sm font-medium">
+                      🥤 {capturedWine.type} detected! You can still add tasting notes below.
                     </p>
-                    <p className="text-orange-700 text-sm mt-1">
-                      For wine analysis, please capture a wine bottle label.
+                    <p className="text-blue-700 text-sm mt-1">
+                      Rate and review any beverage - not just wine!
                     </p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* WSET Quick Notes - Only show for wine products */}
-            {capturedWine.isWine && (
-              <div className="space-y-4">
-                {Object.entries(WSET_CATEGORIES).map(([category, data]) => (
+            {/* Universal Tasting Notes - Show for all products */}
+            <div className="space-y-4">
+              {Object.entries(TASTING_CATEGORIES).map(([category, data]) => (
                 <Card key={category}>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">{data.title}</CardTitle>
@@ -606,10 +605,9 @@ export default function CapturePage() {
                   </CardContent>
                 </Card>
               ))}
-              </div>
-            )}
+            </div>
 
-            {/* Voice Notes - Show for both wine and non-wine */}
+            {/* Voice Notes - Show for all products */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -652,7 +650,7 @@ export default function CapturePage() {
               className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-lg py-6 rounded-xl shadow-lg"
             >
               <Zap className="h-6 w-6 mr-2" />
-              {capturedWine.isWine ? 'Save Wine Card' : 'Save Analysis'}
+              Save Review
             </Button>
           </>
         )}
