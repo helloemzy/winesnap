@@ -100,6 +100,7 @@ export default function CapturePage() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [isProcessingVoice, setIsProcessingVoice] = useState(false)
+  const [microphonePermission, setMicrophonePermission] = useState<'unknown' | 'granted' | 'denied' | 'checking'>('unknown')
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -341,9 +342,83 @@ export default function CapturePage() {
 
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const [audioChunks, setAudioChunks] = useState<Blob[]>([])
+
+  // Check microphone permission on component mount
+  useEffect(() => {
+    const checkMicrophonePermission = async () => {
+      if (!navigator.permissions) {
+        setMicrophonePermission('unknown')
+        return
+      }
+      
+      try {
+        const permission = await navigator.permissions.query({ name: 'microphone' as PermissionName })
+        setMicrophonePermission(permission.state as any)
+        
+        permission.onchange = () => {
+          setMicrophonePermission(permission.state as any)
+        }
+      } catch (error) {
+        console.log('Permission API not supported')
+        setMicrophonePermission('unknown')
+      }
+    }
+    
+    checkMicrophonePermission()
+  }, [])
+
+  // Explicit permission request function
+  const requestMicrophonePermission = async () => {
+    try {
+      setMicrophonePermission('checking')
+      console.log('Explicitly requesting microphone permission...')
+      
+      // Force a getUserMedia call to trigger permission prompt
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      })
+      
+      console.log('Permission granted!')
+      setMicrophonePermission('granted')
+      
+      // Stop the stream immediately since we just wanted permission
+      stream.getTracks().forEach(track => track.stop())
+      
+      return true
+    } catch (error: any) {
+      console.error('Permission request failed:', error)
+      setMicrophonePermission('denied')
+      
+      let errorMessage = "Microphone access denied. "
+      const userAgent = navigator.userAgent.toLowerCase()
+      if (userAgent.includes('iphone') && userAgent.includes('chrome')) {
+        errorMessage += "On iPhone Chrome: 1) Look for 🎤 icon in address bar 2) Tap it and select 'Allow' 3) Refresh page if needed"
+      } else {
+        errorMessage += "Please check your browser settings to allow microphone access for this site."
+      }
+      
+      setVoiceNote(errorMessage)
+      return false
+    }
+  }
   
   const startVoiceRecording = async () => {
     try {
+      // Check permission first
+      if (microphonePermission === 'denied') {
+        setVoiceNote("Microphone access is denied. Please use the 'Enable Microphone' button above to grant permission.")
+        return
+      }
+      
+      if (microphonePermission === 'unknown' || microphonePermission === 'checking') {
+        setVoiceNote("Please enable microphone access first using the button above.")
+        return
+      }
+      
       setIsRecording(true)
       
       // Check if microphone is available
@@ -351,7 +426,7 @@ export default function CapturePage() {
         throw new Error('Audio recording not supported on this device')
       }
       
-      console.log('Requesting microphone access...')
+      console.log('Starting recording with granted permission...')
       
       // Request microphone permission with better error handling for iOS
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -492,6 +567,7 @@ export default function CapturePage() {
     setCaptureMode('camera')
     setShowSuccess(false)
     setIsProcessingVoice(false)
+    setMicrophonePermission('unknown')
     startCamera()
   }
 
@@ -654,46 +730,83 @@ export default function CapturePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {isProcessingVoice ? (
-                  <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-3"></div>
-                      <p className="text-blue-800 font-medium">Processing voice note...</p>
+                {/* Permission Status */}
+                {microphonePermission === 'unknown' || microphonePermission === 'denied' ? (
+                  <div className="bg-yellow-50 rounded-xl p-4 mb-4 border border-yellow-200">
+                    <div className="flex items-center mb-2">
+                      <Mic className="h-4 w-4 text-yellow-600 mr-2" />
+                      <p className="text-yellow-800 font-medium">
+                        Microphone Access {microphonePermission === 'denied' ? 'Denied' : 'Required'}
+                      </p>
                     </div>
-                    <p className="text-blue-600 text-sm mt-1">Transcribing and categorizing keywords</p>
-                  </div>
-                ) : voiceNote ? (
-                  <div className="bg-purple-50 rounded-xl p-4 mb-4">
-                    <p className="text-gray-800 italic">"{voiceNote}"</p>
-                    <p className="text-purple-600 text-sm mt-2">✨ Keywords automatically added to categories below</p>
-                  </div>
-                ) : (
-                  <div className="mb-4">
-                    <p className="text-gray-500 mb-2">Add personal tasting notes with your voice - keywords will auto-populate categories!</p>
-                    <p className="text-xs text-gray-400 bg-gray-50 p-2 rounded-lg">
-                      💡 On iPhone Chrome: If permission is denied, look for the microphone icon in the address bar and tap it to allow access.
+                    <p className="text-yellow-700 text-sm mb-3">
+                      {microphonePermission === 'denied' 
+                        ? "Please allow microphone access to record voice notes."
+                        : "Enable microphone access to record voice notes and auto-populate tasting categories."
+                      }
                     </p>
+                    <Button
+                      onClick={requestMicrophonePermission}
+                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                      disabled={microphonePermission === 'checking'}
+                    >
+                      {microphonePermission === 'checking' ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Checking Permission...
+                        </>
+                      ) : (
+                        <>
+                          <Mic className="h-4 w-4 mr-2" />
+                          🔓 Enable Microphone
+                        </>
+                      )}
+                    </Button>
                   </div>
-                )}
-                
-                <Button
-                  onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
-                  variant={isRecording ? "destructive" : "outline"}
-                  className="w-full"
-                  disabled={isProcessingVoice}
-                >
-                  {isRecording ? (
-                    <>
-                      <MicOff className="h-4 w-4 mr-2" />
-                      Recording... (tap to stop)
-                    </>
-                  ) : (
-                    <>
-                      <Mic className="h-4 w-4 mr-2" />
-                      🎤 Record Voice Note
-                    </>
-                  )}
-                </Button>
+                ) : microphonePermission === 'granted' ? (
+                  <>
+                    {isProcessingVoice ? (
+                      <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
+                        <div className="flex items-center">
+                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-3"></div>
+                          <p className="text-blue-800 font-medium">Processing voice note...</p>
+                        </div>
+                        <p className="text-blue-600 text-sm mt-1">Transcribing and categorizing keywords</p>
+                      </div>
+                    ) : voiceNote ? (
+                      <div className="bg-purple-50 rounded-xl p-4 mb-4">
+                        <p className="text-gray-800 italic">"{voiceNote}"</p>
+                        <p className="text-purple-600 text-sm mt-2">✨ Keywords automatically added to categories below</p>
+                      </div>
+                    ) : (
+                      <div className="mb-4">
+                        <div className="bg-green-50 rounded-lg p-3 mb-3 border border-green-200">
+                          <p className="text-green-800 text-sm font-medium">✅ Microphone enabled!</p>
+                          <p className="text-green-700 text-sm">Record your tasting notes - keywords will auto-populate categories.</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <Button
+                      onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                      variant={isRecording ? "destructive" : "outline"}
+                      className="w-full"
+                      disabled={isProcessingVoice}
+                    >
+                      {isRecording ? (
+                        <>
+                          <MicOff className="h-4 w-4 mr-2" />
+                          Recording... (tap to stop)
+                        </>
+                      ) : (
+                        <>
+                          <Mic className="h-4 w-4 mr-2" />
+                          🎤 Record Voice Note
+                        </>
+                      )}
+                    </Button>
+                  </>
+                ) : null}
               </CardContent>
             </Card>
 
