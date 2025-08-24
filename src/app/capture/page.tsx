@@ -97,17 +97,58 @@ export default function CapturePage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
+  const [cameraError, setCameraError] = useState<string>('')
+  const [cameraReady, setCameraReady] = useState(false)
+
   // Initialize camera
   const startCamera = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } // Use back camera on mobile
-      })
+      setCameraError('')
+      setCameraReady(false)
+      
+      console.log('Requesting camera access...')
+      
+      // Try different camera configurations
+      const constraints = [
+        { video: { facingMode: 'environment' } }, // Back camera first
+        { video: { facingMode: 'user' } }, // Front camera fallback
+        { video: true } // Any camera as last resort
+      ]
+      
+      let stream = null
+      let lastError = null
+      
+      for (const constraint of constraints) {
+        try {
+          console.log('Trying constraint:', constraint)
+          stream = await navigator.mediaDevices.getUserMedia(constraint)
+          break
+        } catch (err) {
+          console.log('Constraint failed:', err)
+          lastError = err
+        }
+      }
+      
+      if (!stream) {
+        throw lastError || new Error('No camera access')
+      }
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream
+        videoRef.current.onloadedmetadata = () => {
+          console.log('Video metadata loaded')
+          setCameraReady(true)
+        }
+        videoRef.current.oncanplay = () => {
+          console.log('Video can play')
+          setCameraReady(true)
+        }
       }
+      
+      console.log('Camera started successfully')
     } catch (error) {
       console.error('Error accessing camera:', error)
+      setCameraError(`Camera error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }, [])
 
@@ -125,72 +166,120 @@ export default function CapturePage() {
   }, [captureMode, startCamera])
 
   const capturePhoto = async () => {
+    console.log('Capture photo clicked')
+    console.log('Camera ready:', cameraReady)
+    console.log('Video ref:', videoRef.current)
+    console.log('Video dimensions:', videoRef.current?.videoWidth, videoRef.current?.videoHeight)
+    
+    // Check if camera is ready
+    if (!cameraReady || !videoRef.current) {
+      console.log('Camera not ready, showing mock data')
+      // Fallback to mock data if camera isn't working
+      setIsCapturing(true)
+      setTimeout(() => {
+        const mockWines = [
+          {
+            name: "Demo Wine (Camera Not Available)",
+            region: "Mock Region", 
+            year: "2023",
+            producer: "Test Producer",
+            type: "Red Wine",
+            confidence: 0.85
+          }
+        ]
+        setCapturedWine(mockWines[0])
+        setCaptureMode('tasting')
+        setIsCapturing(false)
+      }, 1000)
+      return
+    }
+    
     setIsCapturing(true)
     
     try {
-      // Capture actual photo from camera
-      if (videoRef.current && canvasRef.current) {
-        const video = videoRef.current
-        const canvas = canvasRef.current
-        const context = canvas.getContext('2d')
-        
-        // Set canvas size to match video
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        
-        // Draw the current video frame to canvas
-        context?.drawImage(video, 0, 0, canvas.width, canvas.height)
-        
-        // Get image data
-        const imageData = canvas.toDataURL('image/jpeg', 0.8)
-        
-        // Stop camera stream for now
-        const stream = video.srcObject as MediaStream
-        if (stream) {
-          stream.getTracks().forEach(track => track.stop())
-        }
+      console.log('Attempting to capture from video...')
+      
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      
+      if (!video || !canvas) {
+        throw new Error('Video or canvas not available')
       }
       
-      // Simulate AI processing time (in real app, would send image to AI service)
+      const context = canvas.getContext('2d')
+      if (!context) {
+        throw new Error('Canvas context not available')
+      }
+      
+      // Ensure video has loaded
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        throw new Error('Video not loaded properly')
+      }
+      
+      // Set canvas size to match video
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      
+      console.log('Drawing video frame to canvas...')
+      
+      // Draw the current video frame to canvas
+      context.drawImage(video, 0, 0, canvas.width, canvas.height)
+      
+      // Get image data
+      const imageData = canvas.toDataURL('image/jpeg', 0.8)
+      console.log('Image captured, data length:', imageData.length)
+      
+      // Stop camera stream after successful capture
+      const stream = video.srcObject as MediaStream
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+        setCameraReady(false)
+      }
+      
+      // Simulate AI processing time
       setTimeout(() => {
-        // Mock wine detection result based on captured photo
         const mockWines = [
           {
-            name: "Château Margaux 2015",
-            region: "Bordeaux, France", 
-            year: "2015",
-            producer: "Château Margaux",
+            name: "Photo Captured Wine #" + Math.floor(Math.random() * 1000),
+            region: "Camera Detected Region", 
+            year: "2020",
+            producer: "Real Capture Producer",
             type: "Red Wine",
-            confidence: 0.94
+            confidence: 0.92
           },
           {
-            name: "Opus One 2018",
-            region: "Napa Valley, USA", 
-            year: "2018",
-            producer: "Opus One",
-            type: "Red Wine",
-            confidence: 0.91
-          },
-          {
-            name: "Penfolds Grange 2017",
-            region: "Barossa Valley, Australia", 
-            year: "2017",
-            producer: "Penfolds",
-            type: "Red Wine",
+            name: "Captured Bottle Analysis",
+            region: "Photo Analysis Region", 
+            year: "2021",
+            producer: "Image Processing Co.",
+            type: "White Wine",
             confidence: 0.88
           }
         ]
         
-        // Randomly select a wine for variety
         const randomWine = mockWines[Math.floor(Math.random() * mockWines.length)]
-        
         setCapturedWine(randomWine)
         setCaptureMode('tasting')
         setIsCapturing(false)
       }, 2000)
+      
     } catch (error) {
       console.error('Error capturing photo:', error)
-      setIsCapturing(false)
+      
+      // Fallback to mock data on error
+      setTimeout(() => {
+        const mockWine = {
+          name: "Error Fallback Wine",
+          region: "Fallback Region", 
+          year: "2023",
+          producer: "Error Handler",
+          type: "Red Wine",
+          confidence: 0.75
+        }
+        setCapturedWine(mockWine)
+        setCaptureMode('tasting')
+        setIsCapturing(false)
+      }, 1000)
     }
   }
 
@@ -337,7 +426,20 @@ export default function CapturePage() {
                     <div className="absolute inset-0 border-4 border-white/30 border-dashed m-8 rounded-xl flex items-center justify-center">
                       <div className="text-center text-white bg-black/50 rounded-xl p-4 backdrop-blur-sm">
                         <Camera className="h-8 w-8 mx-auto mb-2" />
-                        <p className="font-semibold">Position wine label in frame</p>
+                        {cameraError ? (
+                          <div>
+                            <p className="font-semibold text-red-300">Camera Error</p>
+                            <p className="text-sm text-red-200">{cameraError}</p>
+                            <p className="text-xs text-gray-300 mt-1">Will use demo mode</p>
+                          </div>
+                        ) : cameraReady ? (
+                          <p className="font-semibold text-green-300">Camera Ready - Position wine label in frame</p>
+                        ) : (
+                          <div>
+                            <p className="font-semibold">Loading Camera...</p>
+                            <p className="text-sm text-gray-300">Please allow camera access</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </>
@@ -355,10 +457,20 @@ export default function CapturePage() {
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                       Analyzing...
                     </>
+                  ) : cameraError ? (
+                    <>
+                      <Camera className="h-6 w-6 mr-2" />
+                      Capture Wine (Demo Mode)
+                    </>
+                  ) : cameraReady ? (
+                    <>
+                      <Camera className="h-6 w-6 mr-2" />
+                      📸 Take Photo
+                    </>
                   ) : (
                     <>
                       <Camera className="h-6 w-6 mr-2" />
-                      Capture Wine Label
+                      Loading Camera...
                     </>
                   )}
                 </Button>
