@@ -32,16 +32,9 @@ type NavigationItem = {
 }
 
 const navigationItems: NavigationItem[] = [
-  { href: '/dashboard', icon: Home, label: 'Dashboard' },
-  { href: '/capture', icon: Camera, label: 'Wine Capture', badge: 'New' },
+  { href: '/capture', icon: Camera, label: 'Capture Wine' },
   { href: '/collection', icon: Wine, label: 'My Collection' },
-  { href: '/pet', icon: Heart, label: 'My Pet' },
-  { href: '/achievements', icon: Trophy, label: 'Achievements' },
-  { href: '/friends', icon: Users, label: 'Friends' },
-  { href: '/guilds', icon: Shield, label: 'Guilds' },
-  { href: '/battle', icon: Gamepad2, label: 'Battle Arena' },
-  { href: '/discover', icon: TrendingUp, label: 'Discover' },
-  { href: '/reports', icon: FileText, label: 'Reports' },
+  { href: '/friends', icon: Users, label: 'Friends & Trading' },
 ]
 
 const bottomItems = [
