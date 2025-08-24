@@ -267,32 +267,47 @@ export default function CapturePage() {
         setCameraReady(false)
       }
       
-      // Simulate AI processing time
-      setTimeout(() => {
-        const mockWines = [
-          {
-            name: "Photo Captured Wine #" + Math.floor(Math.random() * 1000),
-            region: "Camera Detected Region", 
-            year: "2020",
-            producer: "Real Capture Producer",
-            type: "Red Wine",
-            confidence: 0.92
+      // Send image to AI analysis API
+      try {
+        console.log('Sending image to AI analysis API...')
+        const aiResponse = await fetch('/api/analyze-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          {
-            name: "Captured Bottle Analysis",
-            region: "Photo Analysis Region", 
-            year: "2021",
-            producer: "Image Processing Co.",
-            type: "White Wine",
-            confidence: 0.88
-          }
-        ]
+          body: JSON.stringify({ imageData }),
+        })
+
+        if (!aiResponse.ok) {
+          throw new Error('AI analysis failed')
+        }
+
+        const analysis = await aiResponse.json()
+        console.log('AI Analysis result:', analysis)
         
-        const randomWine = mockWines[Math.floor(Math.random() * mockWines.length)]
-        setCapturedWine(randomWine)
+        setCapturedWine(analysis)
         setCaptureMode('tasting')
         setIsCapturing(false)
-      }, 2000)
+        
+      } catch (aiError) {
+        console.error('AI analysis error:', aiError)
+        
+        // Fallback to basic analysis on AI failure
+        const fallbackResult = {
+          name: "Captured Image Analysis",
+          type: "Unknown Product",
+          producer: "Unknown Brand",
+          region: "N/A",
+          year: "N/A",
+          confidence: 0.5,
+          isWine: false,
+          description: "AI analysis temporarily unavailable"
+        }
+        
+        setCapturedWine(fallbackResult)
+        setCaptureMode('tasting')
+        setIsCapturing(false)
+      }
       
     } catch (error) {
       console.error('Error capturing photo:', error)
@@ -525,25 +540,45 @@ export default function CapturePage() {
         {/* Tasting Notes Mode */}
         {captureMode === 'tasting' && capturedWine && (
           <>
-            {/* Wine Info Card */}
-            <Card className="bg-gradient-to-r from-purple-100 to-blue-100">
+            {/* Product Info Card */}
+            <Card className={`bg-gradient-to-r ${capturedWine.isWine ? 'from-purple-100 to-blue-100' : 'from-orange-100 to-red-100'}`}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">{capturedWine.name}</h2>
-                    <p className="text-purple-600">{capturedWine.region} • {capturedWine.year}</p>
+                    <p className={`${capturedWine.isWine ? 'text-purple-600' : 'text-orange-600'}`}>
+                      {capturedWine.type} • {capturedWine.producer}
+                    </p>
+                    {capturedWine.isWine && (
+                      <p className="text-sm text-gray-600">{capturedWine.region} • {capturedWine.year}</p>
+                    )}
+                    {capturedWine.description && (
+                      <p className="text-sm text-gray-600 mt-2 italic">{capturedWine.description}</p>
+                    )}
                   </div>
-                  <Badge className="bg-green-500">
+                  <Badge className={capturedWine.isWine ? "bg-green-500" : "bg-orange-500"}>
                     <Star className="h-3 w-3 mr-1" />
                     {Math.round(capturedWine.confidence * 100)}% Match
                   </Badge>
                 </div>
+                
+                {!capturedWine.isWine && (
+                  <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                    <p className="text-orange-800 text-sm font-medium">
+                      🥤 This appears to be a {capturedWine.type.toLowerCase()}, not a wine bottle.
+                    </p>
+                    <p className="text-orange-700 text-sm mt-1">
+                      For wine analysis, please capture a wine bottle label.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* WSET Quick Notes */}
-            <div className="space-y-4">
-              {Object.entries(WSET_CATEGORIES).map(([category, data]) => (
+            {/* WSET Quick Notes - Only show for wine products */}
+            {capturedWine.isWine && (
+              <div className="space-y-4">
+                {Object.entries(WSET_CATEGORIES).map(([category, data]) => (
                 <Card key={category}>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">{data.title}</CardTitle>
@@ -571,9 +606,10 @@ export default function CapturePage() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+              </div>
+            )}
 
-            {/* Voice Notes */}
+            {/* Voice Notes - Show for both wine and non-wine */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -616,7 +652,7 @@ export default function CapturePage() {
               className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-lg py-6 rounded-xl shadow-lg"
             >
               <Zap className="h-6 w-6 mr-2" />
-              Save Wine Card
+              {capturedWine.isWine ? 'Save Wine Card' : 'Save Analysis'}
             </Button>
           </>
         )}
