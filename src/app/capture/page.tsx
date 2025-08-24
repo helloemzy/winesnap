@@ -127,22 +127,71 @@ export default function CapturePage() {
   const capturePhoto = async () => {
     setIsCapturing(true)
     
-    // Simulate AI processing time
-    setTimeout(() => {
-      // Mock wine detection result
-      const mockWine = {
-        name: "Château Margaux 2015",
-        region: "Bordeaux, France", 
-        year: "2015",
-        producer: "Château Margaux",
-        type: "Red Wine",
-        confidence: 0.94
+    try {
+      // Capture actual photo from camera
+      if (videoRef.current && canvasRef.current) {
+        const video = videoRef.current
+        const canvas = canvasRef.current
+        const context = canvas.getContext('2d')
+        
+        // Set canvas size to match video
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        
+        // Draw the current video frame to canvas
+        context?.drawImage(video, 0, 0, canvas.width, canvas.height)
+        
+        // Get image data
+        const imageData = canvas.toDataURL('image/jpeg', 0.8)
+        
+        // Stop camera stream for now
+        const stream = video.srcObject as MediaStream
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop())
+        }
       }
       
-      setCapturedWine(mockWine)
-      setCaptureMode('tasting')
+      // Simulate AI processing time (in real app, would send image to AI service)
+      setTimeout(() => {
+        // Mock wine detection result based on captured photo
+        const mockWines = [
+          {
+            name: "Château Margaux 2015",
+            region: "Bordeaux, France", 
+            year: "2015",
+            producer: "Château Margaux",
+            type: "Red Wine",
+            confidence: 0.94
+          },
+          {
+            name: "Opus One 2018",
+            region: "Napa Valley, USA", 
+            year: "2018",
+            producer: "Opus One",
+            type: "Red Wine",
+            confidence: 0.91
+          },
+          {
+            name: "Penfolds Grange 2017",
+            region: "Barossa Valley, Australia", 
+            year: "2017",
+            producer: "Penfolds",
+            type: "Red Wine",
+            confidence: 0.88
+          }
+        ]
+        
+        // Randomly select a wine for variety
+        const randomWine = mockWines[Math.floor(Math.random() * mockWines.length)]
+        
+        setCapturedWine(randomWine)
+        setCaptureMode('tasting')
+        setIsCapturing(false)
+      }, 2000)
+    } catch (error) {
+      console.error('Error capturing photo:', error)
       setIsCapturing(false)
-    }, 2000)
+    }
   }
 
   const toggleWSETNote = (category: string, note: string) => {
@@ -154,13 +203,78 @@ export default function CapturePage() {
     }))
   }
 
-  const startVoiceRecording = () => {
-    setIsRecording(true)
-    // TODO: Implement actual voice recording
-    setTimeout(() => {
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([])
+  
+  const startVoiceRecording = async () => {
+    try {
+      setIsRecording(true)
+      
+      // Request microphone permission
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      
+      // Create MediaRecorder instance
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      })
+      
+      const chunks: Blob[] = []
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data)
+        }
+      }
+      
+      recorder.onstop = () => {
+        // Create audio blob
+        const audioBlob = new Blob(chunks, { type: 'audio/webm;codecs=opus' })
+        
+        // In a real app, you would send this to a speech-to-text service
+        // For now, we'll simulate transcription
+        const mockTranscriptions = [
+          "This wine has a beautiful ruby color with notes of blackcurrant and oak, medium tannins, and a long finish.",
+          "Rich and complex wine with dark fruit aromas, hints of vanilla and spice, full-bodied with great structure.",
+          "Elegant wine with floral notes, bright acidity, and mineral undertones. Very food-friendly.",
+          "Bold and intense with jammy fruit flavors, chocolate notes, and a warm finish. Well-balanced.",
+          "Light and refreshing with citrus notes, crisp acidity, and a clean finish. Perfect for summer."
+        ]
+        
+        const randomTranscription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)]
+        setVoiceNote(randomTranscription)
+        
+        // Stop all audio tracks
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      recorder.onerror = (event) => {
+        console.error('Recording error:', event)
+        setIsRecording(false)
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      // Start recording
+      recorder.start()
+      setMediaRecorder(recorder)
+      setAudioChunks([])
+      
+    } catch (error) {
+      console.error('Error starting voice recording:', error)
       setIsRecording(false)
-      setVoiceNote("This wine has a beautiful ruby color with notes of blackcurrant and oak...")
-    }, 3000)
+      
+      // Fallback to mock text if permissions denied
+      setTimeout(() => {
+        setVoiceNote("This wine has a beautiful ruby color with notes of blackcurrant and oak...")
+      }, 1000)
+    }
+  }
+  
+  const stopVoiceRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop()
+      setMediaRecorder(null)
+      setIsRecording(false)
+    }
   }
 
   const saveWineCard = () => {
@@ -322,8 +436,7 @@ export default function CapturePage() {
                 )}
                 
                 <Button
-                  onClick={startVoiceRecording}
-                  disabled={isRecording}
+                  onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
                   variant={isRecording ? "destructive" : "outline"}
                   className="w-full"
                 >
