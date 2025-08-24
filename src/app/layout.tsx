@@ -1,10 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { AuthProvider } from '@/components/auth/auth-provider'
-import { PWAProvider } from '@/components/pwa/pwa-provider'
-import { AppLayout } from '@/components/layout/app-layout'
-import { ErrorBoundary } from '@/components/ui/error-boundary'
+// Simplified layout for debugging
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -73,15 +70,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <ErrorBoundary>
-          <PWAProvider>
-            <AuthProvider>
-              <AppLayout>
-                {children}
-              </AppLayout>
-            </AuthProvider>
-          </PWAProvider>
-        </ErrorBoundary>
+        {children}
       </body>
     </html>
   );
