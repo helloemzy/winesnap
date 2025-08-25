@@ -7,12 +7,23 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== Image Analysis API Called ===')
+    
+    // Check if API key exists
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY not found in environment variables')
+      throw new Error('OpenAI API key not configured')
+    }
+    
     const { imageData } = await request.json()
     
     if (!imageData) {
+      console.error('No image data provided in request')
       return NextResponse.json({ error: 'No image data provided' }, { status: 400 })
     }
 
+    console.log('Image data length:', imageData.length)
+    console.log('Image data preview:', imageData.substring(0, 50) + '...')
     console.log('Analyzing image with OpenAI Vision API...')
 
     const response = await openai.chat.completions.create({
@@ -81,7 +92,24 @@ Be accurate - if it's clearly NOT wine, set isWine to false and identify the act
     return NextResponse.json(analysis)
 
   } catch (error: any) {
-    console.error('Error analyzing image:', error)
+    console.error('=== Error analyzing image ===')
+    console.error('Error name:', error.name)
+    console.error('Error message:', error.message)
+    console.error('Error code:', error.code)
+    console.error('Full error:', error)
+    
+    // More specific error messages based on error type
+    let errorDescription = "Image analysis service temporarily unavailable"
+    
+    if (error.code === 'insufficient_quota') {
+      errorDescription = "API quota exceeded - please try again later"
+    } else if (error.code === 'invalid_api_key') {
+      errorDescription = "API key configuration issue"
+    } else if (error.message?.includes('rate limit')) {
+      errorDescription = "Too many requests - please wait a moment"
+    } else if (error.message?.includes('network')) {
+      errorDescription = "Network connection issue - please try again"
+    }
     
     // Fallback response for any errors
     return NextResponse.json({
@@ -92,7 +120,12 @@ Be accurate - if it's clearly NOT wine, set isWine to false and identify the act
       year: "N/A",
       confidence: 0.1,
       isWine: false,
-      description: "Image analysis service temporarily unavailable"
+      description: errorDescription,
+      debug: {
+        error: error.message,
+        code: error.code,
+        timestamp: new Date().toISOString()
+      }
     })
   }
 }
